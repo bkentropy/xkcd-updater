@@ -24,15 +24,15 @@ class Entry:
         print(data)
 
 # Get rss feed from URL (https://xkcd.com/rss.xml)
-def check_rss_feed(cursor, url, rssentries):
+def check_rss_feed(cursor, feedurl, rssentries):
     row = cursor.execute("SELECT id FROM lastpub")
-    lastts = row.fetchone()
-    req = requests.get(url, headers={
+    lastts = row.fetchone() or ("",)
+    req = requests.get(feedurl, headers={
         "If-Modified-Since": lastts[0]
     })
     if req.text:
-        # get the rss feed data from the url
-        feed = feedparser.parse(url)
+        # get the rss feed data from the feedurl
+        feed = feedparser.parse(feedurl)
         entries = feed.entries
 # TODO: refactor this, maybe just one pass over entries
         titles = [entry["title"] for entry in entries]
@@ -46,14 +46,14 @@ def check_rss_feed(cursor, url, rssentries):
     return req
 
 # Hipchat posting function
-def post_to_hipchat(title, src, hipurl):
+def post_to_hipchat(title, src, posturl):
     payload = {
         "color": "gray",
         "message": "<span>" + title + "</span><br><img src='" + src + "'/>",
         "notify": True,
         "message_format": "html"
     }
-    r = requests.post(hipurl, data=payload)
+    r = requests.post(posturl, data=payload)
     print(title, "Posted!")
 
 # Database functions
@@ -94,14 +94,14 @@ def check_and_post(db, cursor, ents):
             posted = check_if_posted(db, cursor, e)
             if not posted:
                 title = e.title + " (" + str(e.link) + ")"
-                post_to_hipchat(title, e.imglink, hipurl)
+                post_to_hipchat(title, e.imglink, posturl)
                 update_to_posted(db, cursor, e)
                 update_timestamp = True
                 print("not in db or posted")
         else:
             insert_entry(db, cursor, e)
             title = e.title + " (" + str(e.link) + ")"
-            post_to_hipchat(title, e.imglink)
+            post_to_hipchat(title, e.imglink, posturl)
             update_to_posted(db, cursor, e)
             update_timestamp = True
             print("not in db at all")
@@ -109,17 +109,17 @@ def check_and_post(db, cursor, ents):
 
 def main():
     # Globals
-    url = 'https://xkcd.com/rss.xml'
-    hipurl = str(sys.argv[1])
+    feedurl = 'https://xkcd.com/rss.xml'
+    posturl = str(sys.argv[1])
     RSSEntries = []
     db = sqlite3.connect("feed.db")
     cursor = db.cursor()
 
-    if url and hipurl:
-        req = check_rss_feed(cursor, url, RSSEntries)
+    if feedurl and posturl:
+        req = check_rss_feed(cursor, feedurl, RSSEntries)
 
     if len(RSSEntries) > 0:
-        need_update_timestamp = check_and_post(db, cursor, RSSEntries)
+        need_update_timestamp = check_and_post(db, cursor, RSSEntries, posturl)
         if need_update_timestamp:
             newts = (req.headers["Last-Modified"],)
             cursor.execute("UPDATE lastpub set id=?", newts)
