@@ -26,6 +26,6 @@ This job will run every Monday, Wednesday, Friday at 9am:
 `00 9 * * 1,3,5 python /path/to/file/xkcd.py special-hipchat-url`
 
 ### Todos:
-[ ] Add try/except/finally blocks to database interactions
-[ ] Refactor where useful
-[ ] Think of more things!
+- [ ] Add try/except/finally blocks to database interactions
+- [ ] Refactor where useful
+- [ ] Think of more things!
