@@ -10,17 +10,17 @@ class Entry:
         self.title = title
         self.imglink = imglink
         self.summary = summary
-        self.link = link # this will be the id field
-        self.pubts = pubts # set sqlite3 to text, change to timestamp in some way
+        self.link = link # this will be the id field in db
+        self.pubts = pubts # set sqlite3 to text, TODO: change to timestamp in some way
         self.posted = 0
 
     def analyze(self):
-        data = "Title:" + self.title + "\n"
-        data += "Imglink:" + self.imglink + "\n"
-        data += "Summary:" + self.summary + "\n"
-        data += "Link:" + self.link + "\n"
-        data += "Pubts:" + self.pubts + "\n"
-        data += "Posted:" + str(self.posted)
+        data = "Link: " + self.link + "\n"
+        data += "Title: " + self.title + "\n"
+        data += "Summary: " + self.summary + "\n"
+        data += "Pubts: " + self.pubts + "\n"
+        data += "Imglink: " + self.imglink + "\n"
+        data += "Posted: " + str(self.posted)
         print(data)
 
 # Get rss feed from URL (https://xkcd.com/rss.xml)

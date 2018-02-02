@@ -6,7 +6,7 @@ Checks the "Last-Modified" header and records that in the feed.db
 
 Then checks what entries have been saved in the db and/or posted to hipchat already.
 
-## Basic breakdown:
+### Basic breakdown:
 * get the RSS feed (include the optional modifed since flag)
 * for each entry check if link is in DB
   * check if in db
@@ -15,8 +15,13 @@ Then checks what entries have been saved in the db and/or posted to hipchat alre
   * if not in db at all
     * insert into db, post it and update posted status
 
+### Setup:
 Use crontab to add job:
 `crontab -e`
 This job will run every Monday, Wednesday, Friday at 9am:
 `00 9 * * 1,3,5 python /path/to/file/xkcd.py special-hipchat-url`
 
+### Todos:
+[ ] Add try/except/finally blocks to database interactions
+[ ] Refactor where useful
+[ ] Think of more things!
