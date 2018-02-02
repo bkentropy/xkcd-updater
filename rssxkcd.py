@@ -5,10 +5,9 @@ import time
 import sys
 import sqlite3
 
-feed_name = 'Xkcd!'
+# Globals
 url = 'https://xkcd.com/rss.xml'
-#feed_name = sys.argv[1]
-#url = sys.argv[2]
+hipurl = str(sys.argv[1])
 
 class Entry:
     def __init__(self, title, imglink, summary, link, pubts, posted):
@@ -25,8 +24,8 @@ class Entry:
         data += "Summary:" + self.summary + "\n"
         data += "Link:" + self.link + "\n"
         data += "Pubts:" + self.pubts + "\n"
-        data += "Posted:" + self.posted
-        return data
+        data += "Posted:" + str(self.posted)
+        print(data)
 
 # ALGO:
 # for get from RSS include the optional updated since flag
@@ -37,31 +36,47 @@ class Entry:
 db = sqlite3.connect("feed.db")
 cursor = db.cursor()
 
+### Wrap all this in a function
 row = cursor.execute("SELECT id from lastpub")
 lastts = row.fetchone()
-
 req = requests.get(url, headers={
     "If-Modified-Since": str(lastts)
 })
-
 RSSEntries = []
 if req.text:
     # get the feed data from the url
     feed = feedparser.parse(url)
     entries = feed.entries
     keys = entries[0].keys()
-
     titles = [entry["title"] for entry in entries]
     imglinks = [entry["summary"].split("\"")[1] for entry in entries]
     summaries = [entry["summary"].split("\"")[3] for entry in entries]
     links = [entry["link"] for entry in entries]
     published = [entry["published"] for entry in entries]
-
     for i in range(len(titles)):
         e = Entry(titles[i], imglinks[i], summaries[i], links[i], published[i], 0)
         #e.analyze()
         RSSEntries.append(e)
+################################
 
+# Hipchat posting function
+def post_to_hipchat(title, src, hipurl):
+    payload = {
+        "color": "gray",
+        "message": "<span>" + title + "</span><br><img src='" + src + "'/>",
+        "notify": True,
+        "message_format": "html"
+    }
+
+    if hipurl:
+        #r = requests.post(hipurl, data=payload)
+        print(title, "Posted!")
+    else:
+        print("Must provide hipchat URL as command line argument")
+
+
+
+# Database functions
 def insert_entry(db, cursor, e):
     cursor.execute('''INSERT INTO entries(id, title, imglink, summary, pubts, posted)
     VALUES(?,?,?,?,?,?)''', (e.link, e.title, e.imglink, e.summary, e.pubts, 0))
@@ -76,8 +91,9 @@ def check_if_in_db(db, cursor, e):
         return False
 
 def check_if_posted(db, cursor, e):
-    rc = cursor.execute('''SELECT id FROM entries where posted=?''', (e.posted,))
-    if rc.fetchone():
+    rc = cursor.execute('''SELECT posted FROM entries where id=?''', (e.link,))
+    exists = rc.fetchone()[0]
+    if exists is 1:
         return True
     else:
         return False
@@ -88,12 +104,14 @@ def check_and_post(db, cursor, ents):
         if indb:
             posted = check_if_posted(db, cursor, e)
             if not posted:
-                # post! to hipchat
-                print("post!")
+                title = e.title + " " + str(e.link)
+                #post_to_hipchat(title, e.imglink, hipurl)
+                print("not in db or posted")
         else:
             insert_entry(db, cursor, e)
-            # post! to hipchat
-            print("post!")
+            title = e.title + " " + str(e.link)
+            #post_to_hipchat(title, e.imglink)
+            print("not in db at all")
 
 if len(RSSEntries) > 0:
     print("nice")
