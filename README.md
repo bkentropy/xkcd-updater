@@ -16,7 +16,11 @@ Then checks what entries have been saved in the db and/or posted to hipchat alre
     * insert into db, post it and update posted status
 
 ### Setup:
-Use crontab to add job:
+#### To create a new database:
+1. Make sure you have sqlite3 installed
+1. sqlite3 feed.db < schema.sql
+
+#### Use crontab to add job:
 `crontab -e`
 This job will run every Monday, Wednesday, Friday at 9am:
 `00 9 * * 1,3,5 python /path/to/file/xkcd.py special-hipchat-url`
