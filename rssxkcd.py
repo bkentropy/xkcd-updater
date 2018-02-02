@@ -80,18 +80,24 @@ def post_to_hipchat(title, src, hipurl):
 def insert_entry(db, cursor, e):
     cursor.execute('''INSERT INTO entries(id, title, imglink, summary, pubts, posted)
     VALUES(?,?,?,?,?,?)''', (e.link, e.title, e.imglink, e.summary, e.pubts, 0))
-    print("Entered...")
     db.commit()
+    print("Entered...")
+
+def update_to_posted(db, cursor, e):
+    cursor.execute('UPDATE entries SET posted=1 WHERE id=?', (e.link,))
+    db.commit()
+    print("Updated posted for:", e.link)
+
 
 def check_if_in_db(db, cursor, e):
-    rc = cursor.execute('''SELECT id FROM entries where id=?''', (e.link,))
+    rc = cursor.execute('''SELECT id FROM entries WHERE id=?''', (e.link,))
     if rc.fetchone():
         return True
     else:
         return False
 
 def check_if_posted(db, cursor, e):
-    rc = cursor.execute('''SELECT posted FROM entries where id=?''', (e.link,))
+    rc = cursor.execute('''SELECT posted FROM entries WHERE id=?''', (e.link,))
     exists = rc.fetchone()[0]
     if exists is 1:
         return True
@@ -106,10 +112,12 @@ def check_and_post(db, cursor, ents):
             if not posted:
                 title = e.title + " " + str(e.link)
                 #post_to_hipchat(title, e.imglink, hipurl)
+                update_to_posted(db, cursor, e)
                 print("not in db or posted")
         else:
             insert_entry(db, cursor, e)
             title = e.title + " " + str(e.link)
+            update_to_posted(db, cursor, e)
             #post_to_hipchat(title, e.imglink)
             print("not in db at all")
 
