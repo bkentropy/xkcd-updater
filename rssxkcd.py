@@ -5,10 +5,6 @@ import time
 import sys
 import sqlite3
 
-# Globals
-url = 'https://xkcd.com/rss.xml'
-hipurl = str(sys.argv[1])
-
 class Entry:
     def __init__(self, title, imglink, summary, link, pubts, posted):
         self.title = title
@@ -27,37 +23,25 @@ class Entry:
         data += "Posted:" + str(self.posted)
         print(data)
 
-# ALGO:
-# for get from RSS include the optional updated since flag
-# check if link is in DB
-#   if not add it
-#   and post it
-#   else it was already saved and already posted
-db = sqlite3.connect("feed.db")
-cursor = db.cursor()
-
-### Wrap all this in a function
-row = cursor.execute("SELECT id from lastpub")
-lastts = row.fetchone()
-req = requests.get(url, headers={
-    "If-Modified-Since": str(lastts)
-})
-RSSEntries = []
-if req.text:
-    # get the feed data from the url
-    feed = feedparser.parse(url)
-    entries = feed.entries
-    keys = entries[0].keys()
-    titles = [entry["title"] for entry in entries]
-    imglinks = [entry["summary"].split("\"")[1] for entry in entries]
-    summaries = [entry["summary"].split("\"")[3] for entry in entries]
-    links = [entry["link"] for entry in entries]
-    published = [entry["published"] for entry in entries]
-    for i in range(len(titles)):
-        e = Entry(titles[i], imglinks[i], summaries[i], links[i], published[i], 0)
-        #e.analyze()
-        RSSEntries.append(e)
-################################
+def check_rss_feed(cursor, url, rssentries):
+    row = cursor.execute("SELECT id from lastpub")
+    lastts = row.fetchone()
+    req = requests.get(url, headers={
+        "If-Modified-Since": str(lastts)
+    })
+    if req.text:
+        # get the rss feed data from the url
+        feed = feedparser.parse(url)
+        entries = feed.entries
+        titles = [entry["title"] for entry in entries]
+        imglinks = [entry["summary"].split("\"")[1] for entry in entries]
+        summaries = [entry["summary"].split("\"")[3] for entry in entries]
+        links = [entry["link"] for entry in entries]
+        published = [entry["published"] for entry in entries]
+        for i in range(len(entries)):
+            e = Entry(titles[i], imglinks[i], summaries[i], links[i], published[i], 0)
+            rssentries.append(e)
+    return req
 
 # Hipchat posting function
 def post_to_hipchat(title, src, hipurl):
@@ -105,33 +89,45 @@ def check_if_posted(db, cursor, e):
         return False
 
 def check_and_post(db, cursor, ents):
+    update_timestamp = False
     for e in ents:
+        print("title:", e.title, "posted:", e.posted)
         indb = check_if_in_db(db, cursor, e)
         if indb:
             posted = check_if_posted(db, cursor, e)
             if not posted:
-                title = e.title + " " + str(e.link)
+                title = e.title + " (" + str(e.link) + ")"
                 #post_to_hipchat(title, e.imglink, hipurl)
                 update_to_posted(db, cursor, e)
+                update_timestamp = True
                 print("not in db or posted")
         else:
             insert_entry(db, cursor, e)
-            title = e.title + " " + str(e.link)
-            update_to_posted(db, cursor, e)
+            title = e.title + " (" + str(e.link) + ")"
             #post_to_hipchat(title, e.imglink)
+            update_to_posted(db, cursor, e)
+            update_timestamp = True
             print("not in db at all")
+    return update_timestamp
 
-if len(RSSEntries) > 0:
-    print("nice")
-    check_and_post(db, cursor, RSSEntries)
+def main():
+    # Globals
+    url = 'https://xkcd.com/rss.xml'
+    hipurl = str(sys.argv[1])
+    RSSEntries = []
 
+    db = sqlite3.connect("feed.db")
+    cursor = db.cursor()
 
-#all_rows = cursor.fetchall()
-#def printrows(rows):
-#    print("Id   :   Title   :   Imglink     :   Summary     :   Published")
-#    for row in rows:
-#        print('{0} : {1} : {2} : {3} : {4}'.format(row[0], row[1], row[2], row[3], row[4]))
-#>>> rssxkcd.feed.entries[0].keys()
-#dict_keys(['title', 'title_detail', 'links', 'link', 'summary',
-#    'summary_detail', 'published', 'published_parsed', 'id', 'guidislink'])
+    req = check_rss_feed(cursor, url, RSSEntries)
+
+    if len(RSSEntries) > 0:
+        need_update_timestamp = check_and_post(db, cursor, RSSEntries)
+        if need_update_timestamp:
+            newts = (req.headers["Last-Modified"],)
+            cursor.execute("UPDATE lastpub set id=?", newts)
+            db.commit()
+
+if __name__ == "__main__":
+    main()
 
