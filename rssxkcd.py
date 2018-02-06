@@ -46,10 +46,11 @@ def check_rss_feed(cursor, feedurl, rssentries):
     return req
 
 # Hipchat posting function
-def post_to_hipchat(title, src, posturl):
+def post_to_hipchat(title, src, alttext, posturl):
     payload = {
         "color": "gray",
-        "message": "<span>" + title + "</span><br><img src='" + src + "'/>",
+        "message": "<span>" + title + "</span><br/><img src='" + src + "'/>" +
+            "<br/><span> Alt-text:" + alttext + "<span>",
         "notify": True,
         "message_format": "html"
     }
@@ -84,24 +85,23 @@ def check_if_posted(db, cursor, e):
         return False
 
 # Primary function
-def check_and_post(db, cursor, ents):
+def check_and_post(db, cursor, ents, posturl):
     # TODO: lines 96-99 and 102-106 are ripe for refactor
     update_timestamp = False
     for e in ents:
-        print("title:", e.title, "posted:", e.posted)
         indb = check_if_in_db(db, cursor, e)
         if indb:
             posted = check_if_posted(db, cursor, e)
             if not posted:
                 title = e.title + " (" + str(e.link) + ")"
-                post_to_hipchat(title, e.imglink, posturl)
+                post_to_hipchat(title, e.imglink, e.summary, posturl)
                 update_to_posted(db, cursor, e)
                 update_timestamp = True
-                print("not in db or posted")
+                print("in db, not posted")
         else:
             insert_entry(db, cursor, e)
             title = e.title + " (" + str(e.link) + ")"
-            post_to_hipchat(title, e.imglink, posturl)
+            post_to_hipchat(title, e.imglink, e.summary, posturl)
             update_to_posted(db, cursor, e)
             update_timestamp = True
             print("not in db at all")
