@@ -46,10 +46,10 @@ def check_rss_feed(cursor, feedurl, rssentries):
     return req
 
 # Hipchat posting function
-def post_to_hipchat(title, src, alttext, posturl):
+def post_to_slack(title, src, alttext, posturl):
+# this did not work, change the payload / data
     payload = {
-        "color": "gray",
-        "message": "<span>" + title + "</span><br/><img src='" + src + "'/>" +
+        "data": "<span>" + title + "</span><br/><img src='" + src + "'/>" +
             "<br/><span> Alt-text:" + alttext + "<span>",
         "notify": True,
         "message_format": "html"
@@ -94,14 +94,14 @@ def check_and_post(db, cursor, ents, posturl):
             posted = check_if_posted(db, cursor, e)
             if not posted:
                 title = e.title + " (" + str(e.link) + ")"
-                post_to_hipchat(title, e.imglink, e.summary, posturl)
+                post_to_slack(title, e.imglink, e.summary, posturl)
                 update_to_posted(db, cursor, e)
                 update_timestamp = True
                 print("in db, not posted")
         else:
             insert_entry(db, cursor, e)
             title = e.title + " (" + str(e.link) + ")"
-            post_to_hipchat(title, e.imglink, e.summary, posturl)
+            post_to_slack(title, e.imglink, e.summary, posturl)
             update_to_posted(db, cursor, e)
             update_timestamp = True
             print("not in db at all")
