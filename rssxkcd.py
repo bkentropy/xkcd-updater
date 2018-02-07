@@ -4,6 +4,7 @@ import feedparser
 import time
 import sys
 import sqlite3
+import datetime
 
 class Entry:
     def __init__(self, title, imglink, summary, link, pubts, posted):
@@ -97,14 +98,14 @@ def check_and_post(db, cursor, ents, posturl):
                 post_to_hipchat(title, e.imglink, e.summary, posturl)
                 update_to_posted(db, cursor, e)
                 update_timestamp = True
-                print("in db, not posted")
+                print("in db, not posted", datetime.datetime.now())
         else:
             insert_entry(db, cursor, e)
             title = e.title + " (" + str(e.link) + ")"
             post_to_hipchat(title, e.imglink, e.summary, posturl)
             update_to_posted(db, cursor, e)
             update_timestamp = True
-            print("not in db at all")
+            print("not in db at all", datetime.datetime.now())
     return update_timestamp
 
 def main():
@@ -125,7 +126,7 @@ def main():
             cursor.execute("UPDATE lastpub set id=?", newts)
             db.commit()
     else:
-        print("All up to date!")
+        print("All up to date!", datetime.datetime.now())
 
 if __name__ == "__main__":
     main()
