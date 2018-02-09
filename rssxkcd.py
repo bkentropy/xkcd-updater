@@ -48,14 +48,19 @@ def check_rss_feed(cursor, feedurl, rssentries):
 # Hipchat posting function
 def post_to_slack(title, src, alttext, posturl):
 # this did not work, change the payload / data
+    title = "Today's comic is:" + title
     payload = {
-        "data": "<span>" + title + "</span><br/><img src='" + src + "'/>" +
-            "<br/><span> Alt-text:" + alttext + "<span>",
-        "notify": True,
-        "message_format": "html"
+        "attachments": [
+            {
+                "pretext": title,
+                "image_url": src,
+                "text": alttext
+            }
+        ]
     }
-    r = requests.post(posturl, data=payload)
-    print(title, "Posted!")
+    r = requests.post(posturl, data=payload, headers={"Content-Type": "application/json"})
+    print(title, "Posted!", r)
+    return r
 
 # Database functions
 def insert_entry(db, cursor, e):
@@ -128,5 +133,6 @@ def main():
         print("All up to date!")
 
 if __name__ == "__main__":
-    main()
+    print('loaded')
+    #main()
 
