@@ -1,4 +1,4 @@
-#!/usr/local/bin/python3
+#!/usr/local/bin/python2
 import requests
 import feedparser
 import time
@@ -37,8 +37,8 @@ def check_rss_feed(cursor, feedurl, rssentries):
         entries = feed.entries
 # TODO: refactor this, maybe just one pass over entries
         titles = [entry["title"] for entry in entries]
-        imglinks = [entry["summary"].split("\"")[1] for entry in entries]
-        summaries = [entry["summary"].split("\"")[3] for entry in entries]
+        imglinks = [entry["summary"].split("\"")[3] for entry in entries]
+        summaries = [entry["summary"].split("\"")[1] for entry in entries]
         links = [entry["link"] for entry in entries]
         published = [entry["published"] for entry in entries]
         for i in range(len(entries)):
