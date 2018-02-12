@@ -79,7 +79,7 @@ def check_if_in_db(db, cursor, e):
         return False
 
 def check_if_posted(db, cursor, e):
-    rc = cursor.execute('''SELECT posted FROM entries WHERE id=?''', (e.link,))
+    rc = cursor.execute('SELECT posted FROM entries WHERE id=?', (e.link,))
     exists = rc.fetchone()[0]
     if exists is 1:
         return True
@@ -127,6 +127,7 @@ def main():
             newts = (req.headers["Last-Modified"],)
             cursor.execute("UPDATE lastpub set id=?", newts)
             db.commit()
+            print('Updated lastpub date to: ', newts)
     else:
         print("All up to date!", datetime.datetime.now())
 
