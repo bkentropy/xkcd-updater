@@ -12,7 +12,7 @@ class Entry:
         self.imglink = imglink
         self.summary = summary
         self.link = link # this will be the id field in db
-        self.pubts = pubts # set sqlite3 to text, TODO: change to timestamp in some way
+        self.pubts = pubts
         self.posted = 0
 
     def analyze(self):
@@ -35,14 +35,15 @@ def check_rss_feed(cursor, feedurl, rssentries):
         # get the rss feed data from the feedurl
         feed = feedparser.parse(feedurl)
         entries = feed.entries
-# TODO: refactor this, maybe just one pass over entries
-        titles = [entry["title"] for entry in entries]
-        imglinks = [entry["summary"].split("\"")[3] for entry in entries]
-        summaries = [entry["summary"].split("\"")[1] for entry in entries]
-        links = [entry["link"] for entry in entries]
-        published = [entry["published"] for entry in entries]
         for i in range(len(entries)):
-            e = Entry(titles[i], imglinks[i], summaries[i], links[i], published[i], 0)
+            e = Entry(
+                entries[i]['title'],
+                entries[i]['summary'].split('\"')[3],
+                entries[i]['summary'].split('\"')[1],
+                entries[i]['link'],
+                entries[i]['published'],
+                0
+            )
             rssentries.append(e)
     return req
 
@@ -51,7 +52,7 @@ def post_to_hipchat(title, src, alttext, posturl):
     payload = {
         "color": "gray",
         "message": "<span>" + title + "</span><br/><img src='" + src + "'/>" +
-            "<br/><span> Alt-text:" + alttext + "<span>",
+            "<br/><span>(Alt-text: " + alttext + ")</span>",
         "notify": True,
         "message_format": "html"
     }
@@ -119,6 +120,7 @@ def main():
     if feedurl and posturl:
         req = check_rss_feed(cursor, feedurl, RSSEntries)
 
+    RSSEntries = sorted(RSSEntries, key=lambda e: e.link)
     if len(RSSEntries) > 0:
         need_update_timestamp = check_and_post(db, cursor, RSSEntries, posturl)
         if need_update_timestamp:
