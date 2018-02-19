@@ -1,10 +1,17 @@
 #!/usr/local/bin/python2
+import argparse
 import requests
 import feedparser
 import time
 import sys
 import sqlite3
 import datetime
+
+# Command line args
+parser = argparse.ArgumentParser(description='Provide HipChat integration url to post xkcd comics')
+parser.add_argument('url', type=str, help='(string) a special url for posting to a hipchat room')
+parser.add_argument('-c', '--commit', action='store_true', help='check the output, and commit if it looks right')
+args = parser.parse_args()
 
 class Entry:
     def __init__(self, title, imglink, summary, link, pubts, posted):
@@ -56,20 +63,23 @@ def post_to_hipchat(title, src, alttext, posturl):
         "notify": True,
         "message_format": "html"
     }
-    r = requests.post(posturl, data=payload)
-    print(title, "Posted!")
+    if args.commit:
+        r = requests.post(posturl, data=payload)
+    print(title, "Posted!", args.commit)
 
 # Database functions
 def insert_entry(db, cursor, e):
-    cursor.execute('''INSERT INTO entries(id, title, imglink, summary, pubts, posted)
-    VALUES(?,?,?,?,?,?)''', (e.link, e.title, e.imglink, e.summary, e.pubts, 0))
-    db.commit()
-    print("Saved entry in db")
+    if args.commit:
+        cursor.execute('''INSERT INTO entries(id, title, imglink, summary, pubts, posted)
+        VALUES(?,?,?,?,?,?)''', (e.link, e.title, e.imglink, e.summary, e.pubts, 0))
+        db.commit()
+    print("Saved entry in db", args.commit)
 
 def update_to_posted(db, cursor, e):
-    cursor.execute('UPDATE entries SET posted=1 WHERE id=?', (e.link,))
-    db.commit()
-    print("Updated posted for:", e.link)
+    if args.commit:
+        cursor.execute('UPDATE entries SET posted=1 WHERE id=?', (e.link,))
+        db.commit()
+    print("Updated posted for:", e.link, args.commit)
 
 def check_if_in_db(db, cursor, e):
     rc = cursor.execute('SELECT id FROM entries WHERE id=?', (e.link,))
@@ -125,9 +135,10 @@ def main():
         need_update_timestamp = check_and_post(db, cursor, RSSEntries, posturl)
         if need_update_timestamp:
             newts = (req.headers["Last-Modified"],)
-            cursor.execute("UPDATE lastpub set id=?", newts)
-            db.commit()
-            print('Updated lastpub date to: ', newts)
+            if args.commit:
+                cursor.execute("UPDATE lastpub set id=?", newts)
+                db.commit()
+            print('Updated lastpub date to: ', newts, args.commit)
     else:
         print("All up to date!", datetime.datetime.now())
 
