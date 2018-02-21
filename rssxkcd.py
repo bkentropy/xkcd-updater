@@ -4,6 +4,7 @@ import feedparser
 import time
 import sys
 import sqlite3
+import json
 
 class Entry:
     def __init__(self, title, imglink, summary, link, pubts, posted):
@@ -45,10 +46,11 @@ def check_rss_feed(cursor, feedurl, rssentries):
             rssentries.append(e)
     return req
 
-# Hipchat posting function
+# Slack posting function
 def post_to_slack(title, src, alttext, posturl):
 # this did not work, change the payload / data
-    title = "Today's comic is:" + title
+    title = "Today's comic is: " + title
+    alttext = "(Alt-text: " + alttext + ")"
     payload = {
         "attachments": [
             {
@@ -58,8 +60,9 @@ def post_to_slack(title, src, alttext, posturl):
             }
         ]
     }
-    r = requests.post(posturl, data=payload, headers={"Content-Type": "application/json"})
-    print(title, "Posted!", r)
+    jload = json.dumps(payload)
+    r = requests.post(posturl, data=jload, headers={"Content-Type": "application/json"})
+    print("Posted! (", title, ")")
     return r
 
 # Database functions
@@ -133,6 +136,6 @@ def main():
         print("All up to date!")
 
 if __name__ == "__main__":
-    print('loaded')
-    #main()
+    #print('loaded')
+    main()
 
