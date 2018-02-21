@@ -37,8 +37,8 @@ def check_rss_feed(cursor, feedurl, rssentries):
         entries = feed.entries
 # TODO: refactor this, maybe just one pass over entries
         titles = [entry["title"] for entry in entries]
-        imglinks = [entry["summary"].split("\"")[1] for entry in entries]
-        summaries = [entry["summary"].split("\"")[3] for entry in entries]
+        imglinks = [entry["summary"].split("\"")[3] for entry in entries]
+        summaries = [entry["summary"].split("\"")[1] for entry in entries]
         links = [entry["link"] for entry in entries]
         published = [entry["published"] for entry in entries]
         for i in range(len(entries)):
@@ -49,6 +49,7 @@ def check_rss_feed(cursor, feedurl, rssentries):
 # Slack posting function
 def post_to_slack(title, src, alttext, posturl):
 # this did not work, change the payload / data
+    print('title', title, 'src', src, alttext)
     title = "Today's comic is: " + title
     alttext = "(Alt-text: " + alttext + ")"
     payload = {
@@ -62,7 +63,7 @@ def post_to_slack(title, src, alttext, posturl):
     }
     jload = json.dumps(payload)
     r = requests.post(posturl, data=jload, headers={"Content-Type": "application/json"})
-    print("Posted! (", title, ")")
+    print("Posted!", title)
     return r
 
 # Database functions
@@ -73,8 +74,8 @@ def insert_entry(db, cursor, e):
     print("Saved entry in db")
 
 def update_to_posted(db, cursor, e):
-    cursor.execute('UPDATE entries SET posted=1 WHERE id=?', (e.link,))
-    db.commit()
+    #cursor.execute('UPDATE entries SET posted=1 WHERE id=?', (e.link,))
+    #db.commit()
     print("Updated posted for:", e.link)
 
 def check_if_in_db(db, cursor, e):
@@ -126,12 +127,13 @@ def main():
     if feedurl and posturl:
         req = check_rss_feed(cursor, feedurl, RSSEntries)
 
+    RSSEntries = sorted(RSSEntries, key=lambda e: e.link)
     if len(RSSEntries) > 0:
         need_update_timestamp = check_and_post(db, cursor, RSSEntries, posturl)
         if need_update_timestamp:
             newts = (req.headers["Last-Modified"],)
-            cursor.execute("UPDATE lastpub set id=?", newts)
-            db.commit()
+            #cursor.execute("UPDATE lastpub set id=?", newts)
+            #db.commit()
     else:
         print("All up to date!")
 
