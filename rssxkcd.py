@@ -48,8 +48,6 @@ def check_rss_feed(cursor, feedurl, rssentries):
 
 # Slack posting function
 def post_to_slack(title, src, alttext, posturl):
-# this did not work, change the payload / data
-    print('title', title, 'src', src, alttext)
     title = "Today's comic is: " + title
     alttext = "(Alt-text: " + alttext + ")"
     payload = {
@@ -74,8 +72,8 @@ def insert_entry(db, cursor, e):
     print("Saved entry in db")
 
 def update_to_posted(db, cursor, e):
-    #cursor.execute('UPDATE entries SET posted=1 WHERE id=?', (e.link,))
-    #db.commit()
+    cursor.execute('UPDATE entries SET posted=1 WHERE id=?', (e.link,))
+    db.commit()
     print("Updated posted for:", e.link)
 
 def check_if_in_db(db, cursor, e):
@@ -132,12 +130,11 @@ def main():
         need_update_timestamp = check_and_post(db, cursor, RSSEntries, posturl)
         if need_update_timestamp:
             newts = (req.headers["Last-Modified"],)
-            #cursor.execute("UPDATE lastpub set id=?", newts)
-            #db.commit()
+            cursor.execute("UPDATE lastpub set id=?", newts)
+            db.commit()
     else:
         print("All up to date!")
 
 if __name__ == "__main__":
-    #print('loaded')
     main()
 
