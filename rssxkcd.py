@@ -1,4 +1,3 @@
-#!/usr/local/bin/python2
 import argparse
 import requests
 import feedparser
@@ -124,7 +123,7 @@ def main():
     feedurl = 'https://xkcd.com/rss.xml'
     posturl = str(sys.argv[1])
     RSSEntries = []
-    db = sqlite3.connect("feed.db")
+    db = sqlite3.connect("/home/bkustra/xkcd-updater/feed.db")
     cursor = db.cursor()
 
     if feedurl and posturl:
